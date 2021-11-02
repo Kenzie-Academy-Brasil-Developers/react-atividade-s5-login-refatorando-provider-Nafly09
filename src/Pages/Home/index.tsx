@@ -1,11 +1,13 @@
 import { Container, Content, AnimationContainer } from "./styles";
 import { useForm } from "react-hook-form";
+import { Link } from "react-router-dom";
 import { FiMail, FiLock } from "react-icons/fi";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { useAuth } from "../../Providers/Auth";
 import Input from "../../components/Input";
 import Button from "../../components/Button";
+import api from "../../services/api";
+import { useHistory } from "react-router";
 
 interface User {
   email: string;
@@ -19,13 +21,10 @@ interface UserData {
 }
 
 export const Login = () => {
-  const { signIn } = useAuth();
+  const history = useHistory();
   const schema = yup.object().shape({
     email: yup.string().email("Email inválido").required("Campo Obrigatório"),
-    password: yup
-      .string()
-      .min(8, "Mínimo de 8 caracteres")
-      .required("Campo Obrigatório"),
+    password: yup.string().required("Campo Obrigatório"),
   });
 
   const {
@@ -36,15 +35,25 @@ export const Login = () => {
     resolver: yupResolver(schema),
   });
 
-  const onSubmit = (data: UserData) => {
-    signIn(data);
+  const onSubmitFunction = ({ password, email }: User) => {
+    const user = { password, email };
+    api
+      .post("/sessions", user)
+      .then((response) => {
+        const { token } = response.data;
+
+        localStorage.setItem("@kenzieHub:token", JSON.stringify(token));
+
+        return history.push("/dashboard");
+      })
+      .catch((e) => console.log(e));
   };
 
   return (
     <Container>
       <Content>
         <AnimationContainer>
-          <form onSubmit={handleSubmit(onSubmit)}>
+          <form onSubmit={handleSubmit(onSubmitFunction)}>
             <h1>Login</h1>
             <Input
               register={register}
@@ -64,6 +73,9 @@ export const Login = () => {
               error={errors.password?.message}
             />
             <Button>Login</Button>
+            <p>
+              Não tem uma conta? Crie a sua <Link to="/">Agora</Link>
+            </p>
           </form>
         </AnimationContainer>
       </Content>

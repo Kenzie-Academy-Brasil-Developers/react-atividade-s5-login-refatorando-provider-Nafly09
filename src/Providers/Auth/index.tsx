@@ -5,6 +5,10 @@ import axios from "axios";
 interface User {
   email: string;
   password: string;
+  name: string;
+  bio: string;
+  contact: string;
+  course_module: string;
 }
 
 interface AuthProps {
@@ -15,45 +19,44 @@ interface AuthProviderData {
   signIn: (userData: User) => void;
   Logout: () => void;
   authToken: string;
+  data: any;
 }
 
 const AuthContext = createContext<AuthProviderData>({} as AuthProviderData);
 
 export const AuthProvider = ({ children }: AuthProps) => {
   const history = useHistory();
+  const [data, setData] = useState({});
 
-  // Dessa forma adicionamos ao state o token caso ele exista no localStorage
   const [authToken, setAuthToken] = useState<string>(
     () => localStorage.getItem("token") || ""
   );
 
-  // Função para logar na aplicação, recebe os dados pegos do form de login
   const signIn = (userData: User) => {
     axios
-      .post("https://kenziehub.herokuapp.com/sessions", userData)
+      .post("https://kenziehub.herokuapp.com/users", userData)
       .then((response) => {
-        // setamos no localStorage o token, caso tenhamos a resposta esperada
+        setData(response.data);
+
         localStorage.setItem("token", response.data.token);
-        // setamos no state o token, caso tenhamos a resposta esperada
+
         setAuthToken(response.data.token);
-        // redirecionamos para a página logado
+
         history.push("/dashboard");
       })
       .catch((err) => console.log(err));
   };
 
-  // Função para deslogar da aplicação
   const Logout = () => {
-    // limpando o localStorage
     localStorage.clear();
-    // limpando o state
+
     setAuthToken("");
-    // redirecionando para login
+
     history.push("/login");
   };
 
   return (
-    <AuthContext.Provider value={{ authToken, Logout, signIn }}>
+    <AuthContext.Provider value={{ authToken, Logout, signIn, data }}>
       {children}
     </AuthContext.Provider>
   );
